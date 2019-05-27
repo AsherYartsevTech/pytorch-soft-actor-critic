@@ -62,6 +62,11 @@ class QNetwork(nn.Module):
 
 
 class GaussianPolicy(nn.Module):
+    '''
+    core Policy, all it returns is mean and std deviation. all it should produce is a (mean,sqrt(variance)) for each
+    possible action entry. it means that this DNN learns first and second moments of the distribution
+    instead trying to learn something much more harder.
+    '''
     def __init__(self, num_inputs, num_actions, hidden_dim):
         super(GaussianPolicy, self).__init__()
         
@@ -82,13 +87,19 @@ class GaussianPolicy(nn.Module):
         return mean, log_std
 
     def sample(self, state):
+        # NN returns ,for each 'entry' in action_space, the mean of this action from this state and its logged std deviation
         mean, log_std = self.forward(state)
+        # we unravvel the log to std deviation. we learn the logged version since it's said to be stable.
         std = log_std.exp()
+        #we prepare an object that produces vectors of size |action_space.shape| from Gaussian dist. with the mean and std the NN learned
         normal = Normal(mean, std)
+        # todo: why?
         x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
         action = torch.tanh(x_t)
+        # from the finally produced batch of  actions we simulate back the log probabilities for such values to appear given Gaussian(mean,std)
         log_prob = normal.log_prob(x_t)
-        # Enforcing Action Bound
+        # Enforcing Action Bound - substracting logarithms is a logarithm of the ratio. it's a sort of normalization
+        #todo: it really seems though that the action vector is bounded for each entry to [0,1]
         log_prob -= torch.log(1 - action.pow(2) + epsilon)
         log_prob = log_prob.sum(1, keepdim=True)
         return action, log_prob, torch.tanh(mean)

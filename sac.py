@@ -19,26 +19,31 @@ class SAC(object):
 
         self.device = torch.device("cuda" if args.cuda else "cpu") 
 
+        # Q network, which yields a certain value for (a_t | s_t) pair
         self.critic = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(device=self.device)
         self.critic_optim = Adam(self.critic.parameters(), lr=args.lr)
 
+        # a sort of a replica - since, due to Bellman recursive definition, Q network learns from itself- and its unstbale
         self.critic_target = QNetwork(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
+        # the start point is same weights in both networks.
         hard_update(self.critic_target, self.critic)
 
         if self.policy_type == "Gaussian":
+            # todo: crunch on this automatic alpha update
             # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
             if self.automatic_entropy_tuning == True:
                 self.target_entropy = -torch.prod(torch.Tensor(action_space.shape).to(self.device)).item()
                 self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
                 self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
-
+            # instanciating of policy - given a state it produces probabilities for actions
             self.policy = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
         else:
             self.alpha = 0
             self.automatic_entropy_tuning = False
+            # todo: what's difference between deterministic to Gaussian
             self.policy = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
             self.policy_optim = Adam(self.policy.parameters(), lr=args.lr)
 
