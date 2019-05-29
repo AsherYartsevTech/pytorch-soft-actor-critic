@@ -1,14 +1,14 @@
 import tensorflow as tf
 import numpy as np
-import sac
+import actor
 
 params = np.ones([2,1200])
 with tf.name_scope('actorImprovalProcess'):
 
-    actor = sac.actor()
+    actor = actor.actor()
     topNode = actor.debug_getBodyHead()
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
 
-        fcn = sess.run([topNode], feed_dict={sac.actorTfNodes['NN_feeds']['batchStateInput']: params})
+        fcn = sess.run([topNode], feed_dict={actor.actorTfNodes['NN_feeds']['batchStateInput']: params})
         print(fcn)

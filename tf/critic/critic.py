@@ -1,5 +1,4 @@
 
-from tf_utils import weight_variable, bias_variable
 import tensorflow as tf
 
 class critic(object):
