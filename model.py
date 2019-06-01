@@ -32,6 +32,7 @@ class ValueNetwork(nn.Module):
 
 
 class QNetwork(nn.Module):
+    # here each Q network is consisted of 2 nets that yield 2 indepent values for (action,state) tuple
     def __init__(self, num_inputs, num_actions, hidden_dim):
         super(QNetwork, self).__init__()
 
@@ -93,8 +94,12 @@ class GaussianPolicy(nn.Module):
         std = log_std.exp()
         #we prepare an object that produces vectors of size |action_space.shape| from Gaussian dist. with the mean and std the NN learned
         normal = Normal(mean, std)
-        # todo: why?
+        # this way our action is not wholely based on something we can't optimize:
+        # if next action was streight sampled from N(mean, std) than backProp can't optimize it because it's totally random.
+        # but! we can separate it to optimizable part of (mean, log_std) and random part N(0,1)
         x_t = normal.rsample()  # for reparameterization trick (mean + std * N(0,1))
+
+        # it's a postponed non linearity! and it's better than relu since x_t might be negative and we don't want to lose it!
         action = torch.tanh(x_t)
         # from the finally produced batch of  actions we simulate back the log probabilities for such values to appear given Gaussian(mean,std)
         log_prob = normal.log_prob(x_t)
