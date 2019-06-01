@@ -1,6 +1,7 @@
 
 from abc import ABC
 import tensorflow as tf
+from tensorflow_probability import distributions as distLib
 
 
 def tfNameScoping(method):
