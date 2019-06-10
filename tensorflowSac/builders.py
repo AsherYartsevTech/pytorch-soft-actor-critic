@@ -2,8 +2,8 @@
 from abc import ABC
 import tensorflow as tf
 from tensorflow_probability import distributions as distLib
-
-
+import random
+import numpy as np
 def tfNameScoping(method):
 
     def methodWithTfNameScope(layerBuilderInstance, inputLayer, nameScope):
@@ -51,11 +51,43 @@ class fullyConnectedLayerBuilder(tfNeauralStructure):
         '''
         W_fc = tf.Variable(tf.truncated_normal(self.settings['weightMatrixShape'],
                                    stddev=self.settings['stddev']), name='weightMatrix')
-        b_fc = tf.Variable(tf.constant(0.0, shape=self.settings['biasShape']), name='bias')
-        head = tf.matmul(W_fc, tf.transpose(inputLayer))
+        tf.summary.histogram("weightMatrix", W_fc)
 
+        b_fc = tf.Variable(tf.constant(0.0, shape=self.settings['biasShape']), name='bias')
+        tf.summary.histogram("bias", b_fc)
+
+        if W_fc.dtype != inputLayer.dtype:
+            inputLayer = tf.cast(inputLayer, dtype=W_fc.dtype)
+
+        head = tf.matmul(W_fc, tf.transpose(inputLayer))
+        head = tf.add(tf.transpose(head), b_fc)
         if self.settings['nonLinearity'] is not None:
-            head = self.settings['nonLinearity'](tf.add(tf.transpose(head), b_fc))
+            head = self.settings['nonLinearity'](head)
+            tf.summary.histogram("activations", head)
 
         self.trackNode(nameScope +'_head', head)
         return head
+
+
+
+class ReplayMemoryBuilder:
+    def __init__(self, capacity):
+        self.capacity = capacity
+        self.buffer = []
+        self.position = 0
+
+    def push(self, state, action, reward, next_state, done):
+        if len(self.buffer) < self.capacity:
+            self.buffer.append(None)
+        self.buffer[self.position] = (state, action, reward, next_state, done)
+        self.position = (self.position + 1) % self.capacity
+
+    def sample(self, batch_size):
+        batch = random.sample(self.buffer, batch_size)
+        state, action, reward, next_state, done = map(np.ma.row_stack, zip(*batch))
+        return state, action, reward, next_state, done
+
+    def __len__(self):
+        return len(self.buffer)
+
+
