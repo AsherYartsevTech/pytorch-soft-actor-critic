@@ -36,6 +36,7 @@ class critic:
             self.optimizationOp = optimizer.minimize(mseLoss)
 
     def optimize(self,sess,grndTruth, nextActionStateFeed):
+
         return sess.run(self.optimizationOp,{self.grndTruth: grndTruth,
                                              self.input[0]: nextActionStateFeed['action'],
                                              self.input[1]: nextActionStateFeed['state'] })

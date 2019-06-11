@@ -25,8 +25,8 @@ class coucher:
             self.action_batch =     tf.placeholder(tf.float32,(batchSize,)+(actionSpaceShape,),name='action_batch')
             self.reward_batch =     tf.placeholder(tf.float32,(batchSize,1),name='reward_batch')
             self.mask_batch =       tf.placeholder(tf.float32,(batchSize,1),name='mask_batch')
-            self.gamma=0.5
-            self.target_update_interval = 50
+            self.gamma=0.99
+            self.target_update_interval = 1
 
     def update_parameters(self,sess, memory, batch_size, updates):
 
@@ -38,17 +38,22 @@ class coucher:
         next_state_action, next_state_log_pi = self.actor.predict(sess, {'state': next_state_batch})
 
         qf1_next_target = self.targetCritic.criticize(sess, {'state': next_state_batch,'action': next_state_action})
-        min_qf_next_target = qf1_next_target
+        min_qf_next_target = qf1_next_target - self.actor.alpha * next_state_log_pi
         next_q_value = reward_batch + mask_batch * self.gamma * (min_qf_next_target)
 
         actBatch, log_pi = self.actor.predict(sess, {'state': state_batch})
 
-        qf1_pi = self.trainingCritic.criticize(sess, {'state': state_batch,'action': actBatch})
+        # Training critic expresses opinion by giving it's own logarithmic probability for the action taken from state
+        qf1 = self.trainingCritic.criticize(sess, {'state': state_batch,'action': action_batch})
 
+        qf1_loss = self.trainingCritic.optimize(sess, (qf1 - next_q_value),{'state': next_state_batch,'action': next_state_action})
+
+        # Training critic expresses opinion by giving it's own logarithmic probability for the actions the policy suggests
+        qf1_pi = self.trainingCritic.criticize(sess, {'state': state_batch, 'action': actBatch})
         min_qf_pi = qf1_pi
 
-        qf1_loss = self.trainingCritic.optimize(sess, next_q_value,{'state': next_state_batch,'action': next_state_action})
-        policy_loss= self.actor.optimize(sess, min_qf_pi, {'state': next_state_batch})
+        # the process self.actor.alpha * log_pi - min_qf_pi goes inside this optimize
+        policy_loss= self.actor.optimize(sess, grndTruth=min_qf_pi, nextState={'state': next_state_batch})
 
 
         if updates % self.target_update_interval == 0:

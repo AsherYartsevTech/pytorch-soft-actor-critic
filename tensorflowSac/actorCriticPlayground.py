@@ -42,8 +42,8 @@ def createCriticTfGraph(name):
 
 
 argSettings = {
-'start_steps': 10,
-'batch_size': 42,
+'start_steps': 50,
+'batch_size': 256,
 'updates_per_step': 1,
     'num_steps': 1000000,
     'eval': False
@@ -77,22 +77,21 @@ with tf.Session() as sess:
     total_numsteps = 0
     updates = 0
     for i_episode in itertools.count(1):
-        # asher todo: temporal patch
-        if i_episode > 100:
+        if total_numsteps > args.num_steps:
             break
+
         episode_reward = 0
         episode_steps = 0
         done = False
         state = env.reset()
 
         while not done:
-            # env.render()
+            env.render()
             if args.start_steps > total_numsteps:
                 action = env.action_space.sample()  # Sample random action
             else:
                 state = np.reshape(state, newshape=(1, observationSpaceShape))
                 action, _ = actor.predict(sess, {'state': state})# Sample action from policy
-                # action = np.reshape(action, newshape=(actionSpaceShape,))
                 action = np.int(action)
             if len(memory) > args.batch_size:
                 # Number of updates per step in environment

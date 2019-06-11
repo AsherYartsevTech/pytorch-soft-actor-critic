@@ -13,7 +13,7 @@ observationSpaceShape = 4
 
 # Memory
 #todo replace 10000 with parameter
-memory = ReplayMemoryBuilder(10000)
+memory = ReplayMemoryBuilder(1000000)
 
 #todo: revise 'stddev' init value for weight matrices
 #todo: revise 'nonLinearity' put in each layer
