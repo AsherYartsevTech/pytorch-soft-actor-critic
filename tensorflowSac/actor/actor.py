@@ -40,7 +40,6 @@ class actor:
             NormalDist = distLib.Normal(loc=0., scale=1., name='NormalTensor')
             NormalSamples = NormalDist.sample(tf.shape(std_vector))
             actionsLogits = tf.math.add(mean_vector,tf.math.multiply(std_vector,NormalSamples))
-            tf.print(actionsLogits, output_stream=sys.stdout)
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
             # todo: implement the normalization of the logProbs
             # log_prob -= torch.log(1 - action.pow(2) + epsilon)
@@ -54,12 +53,12 @@ class actor:
         # todo: change horrible name grndTruth
         self.grndTruth = targetCriticGrndTruthPlaceHolder
         self.loss = tf.reduce_sum(tf.pow(tf.math.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.grndTruth, 2))
-        optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.99)
+        optimizer = tf.train.AdamOptimizer()
         self.optimizationOp = optimizer.minimize(self.loss)
 
     def predict(self,tfSession,inputPlaceholders):
         def adoptActionToEnv(debugAction):
-            return np.clip(debugAction.astype(int), a_min=0, a_max=1)
+            return np.ceil(debugAction)
 
 
 
@@ -71,7 +70,8 @@ class actor:
         return actions, logProbs
 
     def optimize(self, sess, grndTruth,nextState):
-        return sess.run(self.optimizationOp, {self.grndTruth: grndTruth, self.input: nextState['state']})
+        sess.run(self.optimizationOp, {self.grndTruth: grndTruth, self.input: nextState['state']})
+        return sess.run(self.loss, feed_dict={self.grndTruth: grndTruth, self.input: nextState['state']})
 
 
 

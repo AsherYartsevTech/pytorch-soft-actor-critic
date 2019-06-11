@@ -46,16 +46,15 @@ class coucher:
         # Training critic expresses opinion by giving it's own logarithmic probability for the action taken from state
         qf1 = self.trainingCritic.criticize(sess, {'state': state_batch,'action': action_batch})
 
-        qf1_loss = self.trainingCritic.optimize(sess, (qf1 - next_q_value),{'state': next_state_batch,'action': next_state_action})
+        qf1_loss = self.trainingCritic.optimize(sess,grndTruth=(qf1 - next_q_value),nextActionStateFeed={'state': next_state_batch,'action': next_state_action})
 
         # Training critic expresses opinion by giving it's own logarithmic probability for the actions the policy suggests
         qf1_pi = self.trainingCritic.criticize(sess, {'state': state_batch, 'action': actBatch})
         min_qf_pi = qf1_pi
 
         # the process self.actor.alpha * log_pi - min_qf_pi goes inside this optimize
-        policy_loss= self.actor.optimize(sess, grndTruth=min_qf_pi, nextState={'state': next_state_batch})
-
-
+        policy_loss = self.actor.optimize(sess, grndTruth=min_qf_pi, nextState={'state': next_state_batch})
+        print('trainingCriticLoss:{criticLoss}, policyLoss:{policyLoss}'.format(criticLoss=qf1_loss, policyLoss=policy_loss))
         if updates % self.target_update_interval == 0:
             self.trainingCritic.softCopyWeightsToOtherCritic(sess, self.targetCritic)
 

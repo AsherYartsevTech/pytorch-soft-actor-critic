@@ -31,15 +31,19 @@ class critic:
     def constructOptimizer(self, grndTruthPlaceHolder):
         self.grndTruth = grndTruthPlaceHolder
         if not self.nameScope.startswith('target'):
-            mseLoss = tf.losses.mean_squared_error(grndTruthPlaceHolder, self.criticisor)
-            optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.99)
-            self.optimizationOp = optimizer.minimize(mseLoss)
+            self.mseLoss = tf.losses.mean_squared_error(grndTruthPlaceHolder, self.criticisor)
+            optimizer = tf.train.AdamOptimizer()
+            self.optimizationOp = optimizer.minimize(self.mseLoss)
 
     def optimize(self,sess,grndTruth, nextActionStateFeed):
 
-        return sess.run(self.optimizationOp,{self.grndTruth: grndTruth,
+        sess.run(self.optimizationOp,{self.grndTruth: grndTruth,
                                              self.input[0]: nextActionStateFeed['action'],
                                              self.input[1]: nextActionStateFeed['state'] })
+
+        return sess.run(self.mseLoss,feed_dict={self.grndTruth: grndTruth,
+                                             self.input[0]: nextActionStateFeed['action'],
+                                             self.input[1]: nextActionStateFeed['state'] } )
 
 
     def criticize(self,tfSession, runTimeInputs):

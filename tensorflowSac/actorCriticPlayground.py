@@ -42,8 +42,8 @@ def createCriticTfGraph(name):
 
 
 argSettings = {
-'start_steps': 50,
-'batch_size': 256,
+'start_steps': 300,
+'batch_size': 10,
 'updates_per_step': 1,
     'num_steps': 1000000,
     'eval': False
