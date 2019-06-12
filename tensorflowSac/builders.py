@@ -4,6 +4,9 @@ import tensorflow as tf
 from tensorflow_probability import distributions as distLib
 import random
 import numpy as np
+import sys
+np.set_printoptions(threshold=sys.maxsize)
+
 def tfNameScoping(method):
 
     def methodWithTfNameScope(layerBuilderInstance, inputLayer, nameScope):

@@ -2,7 +2,9 @@ from tensorflowSac.model_config import policyArchSettings, batchSize
 import tensorflow as tf
 from tensorflow_probability import distributions as distLib
 import numpy as np
+
 import sys
+np.set_printoptions(threshold=sys.maxsize)
 def tfNameScoping(method):
 
     def methodWithTfNameScope(classInstance, *kwargs):
@@ -40,12 +42,13 @@ class actor:
             NormalDist = distLib.Normal(loc=0., scale=1., name='NormalTensor')
             NormalSamples = NormalDist.sample(tf.shape(std_vector))
             actionsLogits = tf.math.add(mean_vector,tf.math.multiply(std_vector,NormalSamples))
+            self.printedActLogits = tf.print(actionsLogits, output_stream=sys.stdout, summarize=100)
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
             # todo: implement the normalization of the logProbs
             # log_prob -= torch.log(1 - action.pow(2) + epsilon)
             # log_prob = log_prob.sum(1, keepdim=True)
             logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits,clip_value_min=1e-10,clip_value_max=1e+10),name='logProbsOfActionLogits')
-            self.predictor = [actions, logProbs]
+            self.predictor = [actions, logProbs, self.printedActLogits]
 
     @tfNameScoping
     def constructOptimizer(self, targetCriticGrndTruthPlaceHolder):
@@ -61,10 +64,11 @@ class actor:
             return np.ceil(debugAction)
 
 
-
-        actions, logProbs = tfSession.run(self.predictor, feed_dict={self.input: inputPlaceholders['state']})
+        actions, logProbs, printActionLogits = tfSession.run(self.predictor, feed_dict={self.input: inputPlaceholders['state']})
         if inputPlaceholders['state'].shape == (1, 4):
-            print("action:{}".format(actions))
+            np.set_printoptions(threshold=sys.maxsize)
+
+        # print("action:{}, actionLogits:{}".format(actions, printActionLogits))
         # todo: a cleaner solution here
         actions = adoptActionToEnv(actions)
         return actions, logProbs

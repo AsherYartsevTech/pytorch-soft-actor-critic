@@ -2,9 +2,9 @@
 import os
 import numpy as np
 import tensorflow as tf
-import itertools
-import gym
-from gym import spaces
+
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 
 ## custom modules ##
 from tensorflowSac.model_config import observationSpaceShape, actionSpaceShape, batchSize, memory

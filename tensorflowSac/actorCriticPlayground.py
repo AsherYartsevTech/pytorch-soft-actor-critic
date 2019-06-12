@@ -1,9 +1,11 @@
 import os
+import sys
 import numpy as np
 import tensorflow as tf
 import itertools
 import gym
 from gym import spaces
+np.set_printoptions(threshold=sys.maxsize)
 
 ## custom modules ##
 from tensorflowSac.actor.actor import actor
@@ -21,6 +23,7 @@ constract all SAC algorithm left update functions
 
 '''
 
+tf.enable_eager_execution()
 def createActorTfGraph(name):
     grndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='gtruthForActorUpdate')
     statePlaceholder = tf.placeholder(tf.float32, shape=(batchSize, observation_space), name='obsInput')
@@ -43,7 +46,7 @@ def createCriticTfGraph(name):
 
 argSettings = {
 'start_steps': 300,
-'batch_size': 10,
+'batch_size': 9,
 'updates_per_step': 1,
     'num_steps': 1000000,
     'eval': False
