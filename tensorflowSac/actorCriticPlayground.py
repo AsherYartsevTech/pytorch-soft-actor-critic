@@ -23,7 +23,7 @@ constract all SAC algorithm left update functions
 
 '''
 
-tf.enable_eager_execution()
+# tf.enable_eager_execution()
 def createActorTfGraph(name):
     grndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='gtruthForActorUpdate')
     statePlaceholder = tf.placeholder(tf.float32, shape=(batchSize, observation_space), name='obsInput')

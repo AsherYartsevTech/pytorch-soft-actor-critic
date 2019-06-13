@@ -41,21 +41,23 @@ class actor:
         with tf.name_scope('finalActionAndLogProbPredictor'):
             NormalDist = distLib.Normal(loc=0., scale=1., name='NormalTensor')
             NormalSamples = NormalDist.sample(tf.shape(std_vector))
+
             actionsLogits = tf.math.add(mean_vector,tf.math.multiply(std_vector,NormalSamples))
+            #asher todo: for debug meanwhile
             self.printedActLogits = tf.print(actionsLogits, output_stream=sys.stdout, summarize=100)
+
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
+
             # todo: implement the normalization of the logProbs
-            # log_prob -= torch.log(1 - action.pow(2) + epsilon)
-            # log_prob = log_prob.sum(1, keepdim=True)
-            logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits,clip_value_min=1e-10,clip_value_max=1e+10),name='logProbsOfActionLogits')
+            logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits, clip_value_min=1e-10,clip_value_max=1e+10),
+                                                                                    name='logProbsOfActionLogits')
             self.predictor = [actions, logProbs, self.printedActLogits]
 
     @tfNameScoping
-    def constructOptimizer(self, targetCriticGrndTruthPlaceHolder):
+    def constructOptimizer(self, trainingCriticOpinionOnPolicyChoicesPlaceHolder):
         LOGPROBS = 1
-        # todo: change horrible name grndTruth
-        self.grndTruth = targetCriticGrndTruthPlaceHolder
-        self.loss = tf.reduce_sum(tf.pow(tf.math.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.grndTruth, 2))
+        self.trainingCriticOpinionOnPolicyChoices = trainingCriticOpinionOnPolicyChoicesPlaceHolder
+        self.loss = tf.reduce_sum(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.trainingCriticOpinionOnPolicyChoices))
         optimizer = tf.train.AdamOptimizer()
         self.optimizationOp = optimizer.minimize(self.loss)
 
@@ -73,9 +75,9 @@ class actor:
         actions = adoptActionToEnv(actions)
         return actions, logProbs
 
-    def optimize(self, sess, grndTruth,nextState):
-        sess.run(self.optimizationOp, {self.grndTruth: grndTruth, self.input: nextState['state']})
-        return sess.run(self.loss, feed_dict={self.grndTruth: grndTruth, self.input: nextState['state']})
+    def optimize(self, sess, trainingCriticOpinionOnPolicyChoices ,nextState):
+        sess.run(self.optimizationOp, {self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
+        return sess.run(self.loss, feed_dict={self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
 
 
 
