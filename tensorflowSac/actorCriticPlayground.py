@@ -45,7 +45,7 @@ def createCriticTfGraph(name):
 
 
 argSettings = {
-'start_steps': 300,
+'start_steps': 1000,
 'batch_size': 9,
 'updates_per_step': 1,
     'num_steps': 1000000,
@@ -69,10 +69,6 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     trainingCritic.softCopyWeightsToOtherCritic(sess, targetCritic)
     summary_writer = tf.summary.FileWriter(os.getcwd(), graph=tf.get_default_graph())
-    # critic_1_loss,policy_loss,episode_reward = 0
-    # tf.summary.scalar('loss/critic_1', [critic_1_loss])
-    # tf.summary.scalar('loss/policy', [policy_loss])
-    # tf.summary.scalar('reward/train', [episode_reward])
 
     summaries = tf.summary.merge_all()
 
@@ -100,7 +96,7 @@ with tf.Session() as sess:
                 # Number of updates per step in environment
                 for i in range(args.updates_per_step):
                     # Update parameters of all the networks
-                    critic_1_loss, policy_loss = couch.update_parameters(sess,memory, args.batch_size, updates)
+                    leftHemisphereLoss, rightHemisphereLoss, policy_loss = couch.update_parameters(sess,memory, args.batch_size, updates)
                     updates += 1
 
 
@@ -120,7 +116,8 @@ with tf.Session() as sess:
         if total_numsteps > args.num_steps:
             break
 
-        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
+        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}, leftHemiLoss: {}, rightHemiLoss: {}, policyLoss: {}".format(\
+                i_episode, total_numsteps, episode_steps, round(episode_reward, 2),leftHemisphereLoss, rightHemisphereLoss, policy_loss))
         #
         # if i_episode % 10 == 0 and args.eval == True:
         #     avg_reward = 0.

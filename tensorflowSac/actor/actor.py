@@ -26,7 +26,7 @@ class actor:
             # initial value is special, therefor explicit init
             layering = inputPlaceholders
             for key in meanArch.keys():
-                layering = meanArch[key]['builder'](meanArch[key]['builder_params']).construct(layering, meanArch[key]['name'])
+                layering = meanArch[key]['builder'](meanArch[key]['builder_params']).construct(layering, nameScope=key)
             mean_vector = layering
 
         with tf.name_scope('StddevOfEachActionEntry'):
@@ -34,7 +34,7 @@ class actor:
             # initial value is special, therefor explicit init
             layering = inputPlaceholders
             for key in logStdArch.keys():
-                layering = logStdArch[key]['builder'](logStdArch[key]['builder_params']).construct(layering, logStdArch[key]['name'])
+                layering = logStdArch[key]['builder'](logStdArch[key]['builder_params']).construct(layering, nameScope=key)
             log_std_vector = layering
             std_vector = tf.exp(log_std_vector, name='logStdToStd')
 
@@ -42,16 +42,18 @@ class actor:
             NormalDist = distLib.Normal(loc=0., scale=1., name='NormalTensor')
             NormalSamples = NormalDist.sample(tf.shape(std_vector))
 
-            actionsLogits = tf.math.add(mean_vector,tf.math.multiply(std_vector,NormalSamples))
+            actionsLogits = tf.math.add(mean_vector, tf.math.multiply(std_vector,NormalSamples))
             #asher todo: for debug meanwhile
-            self.printedActLogits = tf.print(actionsLogits, output_stream=sys.stdout, summarize=100)
+            # self.printedActLogits = tf.print(actionsLogits, output_stream=sys.stdout, summarize=100)
 
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
 
             # todo: implement the normalization of the logProbs
             logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits, clip_value_min=1e-10,clip_value_max=1e+10),
                                                                                     name='logProbsOfActionLogits')
-            self.predictor = [actions, logProbs, self.printedActLogits]
+            # self.predictor = [actions, logProbs, self.printedActLogits]
+            self.predictor = [actions, logProbs]
+
 
     @tfNameScoping
     def constructOptimizer(self, trainingCriticOpinionOnPolicyChoicesPlaceHolder):
@@ -66,7 +68,7 @@ class actor:
             return np.ceil(debugAction)
 
 
-        actions, logProbs, printActionLogits = tfSession.run(self.predictor, feed_dict={self.input: inputPlaceholders['state']})
+        actions, logProbs = tfSession.run(self.predictor, feed_dict={self.input: inputPlaceholders['state']})
         if inputPlaceholders['state'].shape == (1, 4):
             np.set_printoptions(threshold=sys.maxsize)
 
@@ -77,6 +79,7 @@ class actor:
 
     def optimize(self, sess, trainingCriticOpinionOnPolicyChoices ,nextState):
         sess.run(self.optimizationOp, {self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
+
         return sess.run(self.loss, feed_dict={self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
 
 

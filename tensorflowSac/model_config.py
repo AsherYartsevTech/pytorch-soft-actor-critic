@@ -127,42 +127,98 @@ policyArchSettings = {
 }
 
 
-criticArchSettings = {
-    'L1':      {'name': 'Layer1',
-                'builder': fullyConnectedLayerBuilder,
-                'builder_params': {
-                    'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
-                    'biasShape': [100],
-                    'stddev': 0.03,
-                    'nonLinearity': tf.nn.relu
-                    }
-                },
-    'L2':      {'name': 'Layer2',
-                'builder': fullyConnectedLayerBuilder,
-                'builder_params': {
-                    'weightMatrixShape': [50, 100],
-                    'biasShape': [50],
-                    'stddev': 0.1,
-                    'nonLinearity': tf.nn.relu
-                    }
-                },
-    'L3':      {'name': 'Layer3',
-                'builder': fullyConnectedLayerBuilder,
-                'builder_params': {
-                    'weightMatrixShape': [10, 50],
-                    'biasShape': [10],
-                    'stddev': 0.14142,
-                    'nonLinearity': tf.nn.relu
-                    }
-                },
+leftHemisphereCriticArchSettings = {
+    'leftHemisphere_L1':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
+            'biasShape': [100],
+            'stddev': 0.03,
+            'nonLinearity': tf.nn.relu
+        }
+    },
+    'leftHemisphere_L2':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [50, 100],
+            'biasShape': [50],
+            'stddev': 0.1,
+            'nonLinearity': tf.nn.relu
+        }
+    },
+    'leftHemisphere_L3':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [10, 50],
+            'biasShape': [10],
+            'stddev': 0.14142,
+            'nonLinearity': tf.nn.relu
+        }
+    },
     #'head' produces logProbs of action|state
-    'head':    {'name': 'head',
-                'builder': fullyConnectedLayerBuilder,
-                'builder_params': {
-                    'weightMatrixShape': [1, 10],
-                    'biasShape': [1],
-                    'stddev': 0.316,
-                    'nonLinearity': None
-                    }
-                }
+    'leftHemisphere_head':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [1, 10],
+            'biasShape': [1],
+            'stddev': 0.316,
+            'nonLinearity': None
+        }
+    }
+}
+
+rightHemisphereCriticArchSettings = {
+    'rightHemisphere_L1':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
+            'biasShape': [100],
+            'stddev': 0.03,
+            'nonLinearity': tf.nn.relu
+        }
+    },
+    'rightHemisphere_L2':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [50, 100],
+            'biasShape': [50],
+            'stddev': 0.1,
+            'nonLinearity': tf.nn.relu
+        }
+    },
+    'rightHemisphere_L3':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [10, 50],
+            'biasShape': [10],
+            'stddev': 0.14142,
+            'nonLinearity': tf.nn.relu
+        }
+    },
+    #'head' produces logProbs of action|state
+    'rightHemisphere_head':
+    {
+        'builder': fullyConnectedLayerBuilder,
+        'builder_params':
+        {
+            'weightMatrixShape': [1, 10],
+            'biasShape': [1],
+            'stddev': 0.316,
+            'nonLinearity': None
+        }
+    }
 }
