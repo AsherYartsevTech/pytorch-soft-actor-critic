@@ -5,24 +5,24 @@ import numpy as np
 
 import sys
 np.set_printoptions(threshold=sys.maxsize)
-def tfNameScoping(method):
-
-    def methodWithTfNameScope(classInstance, *kwargs):
-        with tf.name_scope(classInstance.nameScope):
-            return method(classInstance, *kwargs)
-
-    return methodWithTfNameScope
+# def tfNameScoping(method):
+#
+#     def methodWithTfNameScope(classInstance, *kwargs):
+#         with tf.name_scope(classInstance.nameScope):
+#             return method(classInstance, *kwargs)
+#
+#     return methodWithTfNameScope
 
 class actor:
     def __init__(self, nameScope):
         self.nameScope = nameScope
         self.alpha = 0.9
-    @tfNameScoping
-    def constructPredictor(self,inputPlaceholders):
+    # @tfNameScoping
+    def constructPredictor(self,inputPlaceholders,trainingCriticOpinionOnPolicyChoicesPlaceHolder):
         self.input = inputPlaceholders
 
         with tf.name_scope('MeansOfEachActionEntry'):
-            meanArch = policyArchSettings['meanNN']
+            meanArch = policyArchSettings['deepMean']
             # initial value is special, therefor explicit init
             layering = inputPlaceholders
             for key in meanArch.keys():
@@ -30,7 +30,7 @@ class actor:
             mean_vector = layering
 
         with tf.name_scope('StddevOfEachActionEntry'):
-            logStdArch = policyArchSettings['logStdNN']
+            logStdArch = policyArchSettings['deepStddev']
             # initial value is special, therefor explicit init
             layering = inputPlaceholders
             for key in logStdArch.keys():
@@ -43,25 +43,28 @@ class actor:
             NormalSamples = NormalDist.sample(tf.shape(std_vector))
 
             actionsLogits = tf.math.add(mean_vector, tf.math.multiply(std_vector,NormalSamples))
-            #asher todo: for debug meanwhile
-            # self.printedActLogits = tf.print(actionsLogits, output_stream=sys.stdout, summarize=100)
 
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
 
-            # todo: implement the normalization of the logProbs
-            logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits, clip_value_min=1e-10,clip_value_max=1e+10),
+            logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits, clip_value_min=1e-10,clip_value_max=1e+10, name="clipLogProbsOfActionLogits"),
                                                                                     name='logProbsOfActionLogits')
-            # self.predictor = [actions, logProbs, self.printedActLogits]
+
             self.predictor = [actions, logProbs]
+            tf.summary.histogram("actorSugeestedActions", actions)
+            tf.summary.histogram("actorSugeestedlogProbs", logProbs)
 
+        with tf.name_scope('semi_KL_loss'):
+            # it's not a real KL loss since those are not realdistributions which are summed to 1
+            LOGPROBS = 1
+            self.trainingCriticOpinionOnPolicyChoices = trainingCriticOpinionOnPolicyChoicesPlaceHolder
+            # from original KL: p*(log(p)-log(q)) we ommit the p since its the 'p' of the ground truth part, and there for serves as constant
+            self.loss = tf.reduce_mean(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.trainingCriticOpinionOnPolicyChoices))
+            tf.summary.scalar("loss", self.loss)
 
-    @tfNameScoping
-    def constructOptimizer(self, trainingCriticOpinionOnPolicyChoicesPlaceHolder):
-        LOGPROBS = 1
-        self.trainingCriticOpinionOnPolicyChoices = trainingCriticOpinionOnPolicyChoicesPlaceHolder
-        self.loss = tf.reduce_sum(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.trainingCriticOpinionOnPolicyChoices))
-        optimizer = tf.train.AdamOptimizer()
-        self.optimizationOp = optimizer.minimize(self.loss)
+        with tf.name_scope('backprop_gradients'):
+
+            optimizer = tf.train.AdamOptimizer()
+            self.optimizationOp = optimizer.minimize(self.loss)
 
     def predict(self,tfSession,inputPlaceholders):
         def adoptActionToEnv(debugAction):
@@ -77,10 +80,14 @@ class actor:
         actions = adoptActionToEnv(actions)
         return actions, logProbs
 
-    def optimize(self, sess, trainingCriticOpinionOnPolicyChoices ,nextState):
+    def optimize(self, sess, trainingCriticOpinionOnPolicyChoices ,nextState, summary_writer, summaries):
         sess.run(self.optimizationOp, {self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
 
-        return sess.run(self.loss, feed_dict={self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
+
+        summaryOutput = sess.run(summaries, feed_dict={self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices,
+                                       self.input: nextState['state']})
+        summary_writer.add_summary(summaryOutput)
+
 
 
 

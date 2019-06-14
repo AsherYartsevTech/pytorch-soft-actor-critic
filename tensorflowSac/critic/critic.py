@@ -4,77 +4,95 @@ import tensorflow as tf
 
 def tfNameScoping(method):
 
-    def methodWithTfNameScope(classInstance, *kwargs):
-        with tf.name_scope(classInstance.nameScope):
-            return method(classInstance, *kwargs)
+    def methodWithTfNameScope(classInstance, *args):
+        with tf.name_scope(classInstance.nameScope) as scope:
+            return method(classInstance, *args)
 
     return methodWithTfNameScope
 
 class critic:
     def __init__(self, nameScope):
         self.nameScope = nameScope
+        #todo: extract it later to hyperparameter
+        self.tau = 0.005
 
     @tfNameScoping
-    def construct(self,inputPlaceholders):
+    def construct(self,inputPlaceholders, expectedRewardAsGrndTruth):
         self.input = inputPlaceholders
         self.baseLayer = tf.concat(self.input, axis=-1 ,name='stateAndActionConcatinator')
+        with tf.name_scope("leftHemisphere"):
+            # construct left hemisphere
+            arch = leftHemisphereCriticArchSettings
+            # inisitial value is special, therefor explicit init
+            layering = self.baseLayer
+            for key in arch.keys():
+                layering = arch[key]['builder'](arch[key]['builder_params']).construct(layering, nameScope=key)
+                expectedReward = layering
+            self.leftExpectedReward = expectedReward
+        with tf.name_scope("rightHemisphere"):
+            # construct right hemisphere
+            arch = rightHemisphereCriticArchSettings
+            # inisitial value is special, therefor explicit init
+            layering = self.baseLayer
+            for key in arch.keys():
+                layering = arch[key]['builder'](arch[key]['builder_params']).construct(layering, nameScope=key)
+            expectedReward = layering
+            self.rightExpectedReward = expectedReward
 
-        # construct left hemisphere
-        arch = leftHemisphereCriticArchSettings
-        # inisitial value is special, therefor explicit init
-        layering = self.baseLayer
-        for key in arch.keys():
-            layering = arch[key]['builder'](arch[key]['builder_params']).construct(layering, nameScope=key)
-        log_prob_vector = layering
-        self.leftCriticisor = log_prob_vector
-
-        # construct right hemisphere
-        arch = rightHemisphereCriticArchSettings
-        # inisitial value is special, therefor explicit init
-        layering = self.baseLayer
-        for key in arch.keys():
-            layering = arch[key]['builder'](arch[key]['builder_params']).construct(layering, nameScope=key)
-        log_prob_vector = layering
-        self.rightCriticisor = log_prob_vector
-
-
-
-
-    def constructOptimizer(self, grndTruthPlaceHolder):
-        self.grndTruth = grndTruthPlaceHolder
         if not self.nameScope.startswith('target'):
-            self.leftMseLoss = tf.losses.mean_squared_error(grndTruthPlaceHolder, self.leftCriticisor)
-            self.rightMseLoss = tf.losses.mean_squared_error(grndTruthPlaceHolder, self.rightCriticisor)
+            with tf.name_scope("mse_losses"):
+                self.expectedRewardAsGrndTruth= expectedRewardAsGrndTruth
+                self.leftMseLoss = tf.losses.mean_squared_error(self.expectedRewardAsGrndTruth, self.leftExpectedReward, scope="leftHemiLoss")
+                self.rightMseLoss = tf.losses.mean_squared_error(self.expectedRewardAsGrndTruth, self.rightExpectedReward, scope="leftrightHemiLoss")
+                # todo: find better place to put this histograms
+                tf.summary.scalar("leftMseLoss", self.leftMseLoss)
+                tf.summary.scalar("rightMseLoss", self.rightMseLoss)
 
-            optimizer = tf.train.AdamOptimizer()
-            self.optimizeLeftHemisphere = optimizer.minimize(self.leftMseLoss)
-            self.optimizeRightHemisphere = optimizer.minimize(self.rightMseLoss)
+            with tf.name_scope("backprop_gradients_leftHemiGrads"):
+                optimizer = tf.train.AdamOptimizer(name="leftHemiGrads_Adam")
+                self.optimizeLeftHemisphere = optimizer.minimize(self.leftMseLoss, name="leftHemiGrads")
 
-    def optimize(self,sess,grndTruth, nextActionStateFeed):
+            with tf.name_scope("backprop_gradients_rightHemiGrads"):
+                optimizer = tf.train.AdamOptimizer(name="rightHemiGrads_Adam")
+                self.optimizeRightHemisphere = optimizer.minimize(self.rightMseLoss, name="rightHemiGrads")
 
-        sess.run(self.optimizeLeftHemisphere,{self.grndTruth: grndTruth,
+    def optimize(self,sess,expectedRewardAsGrndTruth, nextActionStateFeed,summary_writer, summaries):
+
+
+        # todo: decide how to utilize metadata
+        # Define options for the `sess.run()` call.
+        options = tf.RunOptions()
+        options.output_partition_graphs = True
+        options.trace_level = tf.RunOptions.FULL_TRACE
+
+        # Define a container for the returned metadata.
+        metadata = tf.RunMetadata()
+
+        sess.run(self.optimizeLeftHemisphere,{self.expectedRewardAsGrndTruth: expectedRewardAsGrndTruth,
                                              self.input[0]: nextActionStateFeed['action'],
-                                             self.input[1]: nextActionStateFeed['state'] })
+                                             self.input[1]: nextActionStateFeed['state'] },options=options, run_metadata=metadata)
 
-        sess.run(self.optimizeRightHemisphere, {self.grndTruth: grndTruth,
+        # # Print the subgraphs that executed on each device.
+        # print(metadata.partition_graphs)
+        #
+        # # Print the timings of each operation that executed.
+        # print(metadata.step_stats)
+        sess.run(self.optimizeRightHemisphere, {self.expectedRewardAsGrndTruth: expectedRewardAsGrndTruth,
                                                self.input[0]: nextActionStateFeed['action'],
                                                self.input[1]: nextActionStateFeed['state']})
 
-        return sess.run([self.leftMseLoss, self.rightMseLoss], feed_dict={self.grndTruth: grndTruth,
-                                             self.input[0]: nextActionStateFeed['action'],
-                                             self.input[1]: nextActionStateFeed['state'] } )
-
+        summaryOutput = sess.run(summaries, {self.expectedRewardAsGrndTruth: expectedRewardAsGrndTruth,
+                                            self.input[0]: nextActionStateFeed['action'],
+                                            self.input[1]: nextActionStateFeed['state']})
+        summary_writer.add_summary(summaryOutput)
 
     def criticize(self,tfSession, runTimeInputs):
 
-        leftHemisphereLogProbs,rightHemisphereLogProbs = tfSession.run([self.leftCriticisor, self.rightCriticisor], feed_dict={self.input[0]: runTimeInputs['action'],
+        leftHemisphereLogProbs,rightHemisphereLogProbs = tfSession.run([self.leftExpectedReward, self.rightExpectedReward], feed_dict={self.input[0]: runTimeInputs['action'],
                                                                                self.input[1]: runTimeInputs['state']})
 
         return leftHemisphereLogProbs,rightHemisphereLogProbs
 
-    #todo: resolve identical namescopes for each method called under this decorator\
-    #resulting in tedious default numerating in tensorboard
-    @tfNameScoping
     def softCopyWeightsToOtherCritic(self,sess, otherCritic):
         '''
 
@@ -82,10 +100,12 @@ class critic:
         :param otherCritic: object of class critic with same architechture
         :return: the values of all variables of calling critic, which are a result of tf.assign op evaluation
         '''
-        # todo: optimize
-        # create N tf ops of assigning values. N is the quantity of trainable variables
-        update_weights = [tf.assign(dstCriticVar, srcCriticVar) for (dstCriticVar, srcCriticVar) in
-                          zip(tf.trainable_variables(otherCritic.nameScope), tf.trainable_variables(self.nameScope))]
-        return sess.run(update_weights)
+        # todo: create here some soft copying
+        with tf.name_scope("softWeightsCopyTo_{}".format(otherCritic.nameScope)):
 
+            # create N tf ops of assigning values. N is the quantity of trainable variables
+            self.update_weights = [tf.assign(dstCriticVar, tf.subtract(tf.scalar_mul(1-self.tau, dstCriticVar),tf.scalar_mul(self.tau, srcCriticVar)))\
+                              for (dstCriticVar, srcCriticVar) in
+                              zip(tf.trainable_variables(otherCritic.nameScope), tf.trainable_variables(self.nameScope))]
+            return sess.run(self.update_weights)
 

@@ -15,20 +15,14 @@ from tensorflowSac.model_config import observationSpaceShape, actionSpaceShape, 
 
 class coucher:
     def __init__(self, actor, trainingCritic,targetCritic):
-        with tf.name_scope('couch'):
-            self.actor = actor
-            self.trainingCritic = trainingCritic
-            self.targetCritic = targetCritic
+        self.actor = actor
+        self.trainingCritic = trainingCritic
+        self.targetCritic = targetCritic
 
-            self.state_batch =      tf.placeholder(tf.float32,(batchSize,)+(observationSpaceShape,),name='state_batch')
-            self.next_state_batch = tf.placeholder(tf.float32,(batchSize,)+(observationSpaceShape,),name='next_state_batch')
-            self.action_batch =     tf.placeholder(tf.float32,(batchSize,)+(actionSpaceShape,),name='action_batch')
-            self.reward_batch =     tf.placeholder(tf.float32,(batchSize,1),name='reward_batch')
-            self.mask_batch =       tf.placeholder(tf.float32,(batchSize,1),name='mask_batch')
-            self.gamma=0.99
-            self.target_update_interval = 1
+        self.gamma=0.99
+        self.target_update_interval = 1
 
-    def update_parameters(self,sess, memory, batch_size, updates):
+    def update_parameters(self,sess, memory, batch_size, updates, summary_writer, trainCriticSummary,targetCriticSummary ,actorSummary):
 
         # Sample a batch from memory
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
@@ -43,8 +37,7 @@ class coucher:
         expectedRewardAsGrndTruth = reward_batch + mask_batch * self.gamma * (expectedValueForNextState)
 
 
-        leftHemisphereLoss, rightHemisphereLoss = self.trainingCritic.optimize(sess,grndTruth=expectedRewardAsGrndTruth,
-                                                    nextActionStateFeed={'state': state_batch, 'action': action_batch})
+        self.trainingCritic.optimize(sess,expectedRewardAsGrndTruth,{'state': state_batch, 'action': action_batch},summary_writer, trainCriticSummary)
         # end all equation (5) from paper
 
         actBatch, log_pi = self.actor.predict(sess, {'state': state_batch})
@@ -52,13 +45,13 @@ class coucher:
         leftHemisphereLogCurrStateValues, rightHemisphereLogCurrStateValues = self.trainingCritic.criticize(sess, {'state': state_batch, 'action': actBatch})
         minLogCurrStateValues = tf.minimum(leftHemisphereLogCurrStateValues, rightHemisphereLogCurrStateValues).eval()
 
-        # the process self.actor.alpha * log_pi - min_qf_pi goes inside this optimize
-        policy_loss = self.actor.optimize(sess, trainingCriticOpinionOnPolicyChoices=minLogCurrStateValues, nextState={'state': next_state_batch})
 
-        # print('trainingCriticLoss:{criticLoss}, policyLoss:{policyLoss}'.format(criticLoss=qf1_loss, policyLoss=policy_loss))
+        # the process self.actor.alpha * log_pi - min_qf_pi goes inside this optimize
+        self.actor.optimize(sess, minLogCurrStateValues,{'state': next_state_batch},summary_writer, actorSummary)
+
 
         if updates % self.target_update_interval == 0:
             self.trainingCritic.softCopyWeightsToOtherCritic(sess, self.targetCritic)
 
-        return leftHemisphereLoss, rightHemisphereLoss, policy_loss
+
 

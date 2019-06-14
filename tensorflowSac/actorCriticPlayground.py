@@ -2,9 +2,7 @@ import os
 import sys
 import numpy as np
 import tensorflow as tf
-import itertools
 import gym
-from gym import spaces
 np.set_printoptions(threshold=sys.maxsize)
 
 ## custom modules ##
@@ -18,29 +16,25 @@ observation_space = observationSpaceShape
 action_space = actionSpaceShape
 
 
-'''
-constract all SAC algorithm left update functions
-
-'''
-
-# tf.enable_eager_execution()
 def createActorTfGraph(name):
+
     grndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='gtruthForActorUpdate')
     statePlaceholder = tf.placeholder(tf.float32, shape=(batchSize, observation_space), name='obsInput')
 
-    actor1 = actor(name)
-    actor1.constructPredictor(statePlaceholder)
-    actor1.constructOptimizer(grndTruthPlaceHolder)
+    with tf.name_scope(name):
+        actor1 = actor(name)
+        actor1.constructPredictor(statePlaceholder, grndTruthPlaceHolder)
     return actor1
 
 def createCriticTfGraph(name):
+
     grndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='outputOfTargetCriticAndActorProb')
     actionPlaceholder = tf.placeholder(tf.float32, shape=(batchSize, action_space), name='actionInput')
     statePlaceholder = tf.placeholder(tf.float32, shape=(batchSize, observation_space), name='obsInput')
+
     critic1 = critic(name)
     #todo: make construct private later when debug is finished
-    critic1.construct([actionPlaceholder, statePlaceholder])
-    critic1.constructOptimizer(grndTruthPlaceHolder)
+    critic1.construct([actionPlaceholder, statePlaceholder], grndTruthPlaceHolder)
     return critic1
 
 
@@ -61,6 +55,15 @@ class arguments:
 
 args = arguments(argSettings)
 
+#
+# from sympy import dsolve, Eq, symbols, Function
+# t = symbols('t')
+# x = symbols('x', cls=Function)
+# deqn1 = Eq(x(t).diff(t), 1 - x(t))
+# sol1 = dsolve(deqn1, x(t))
+#
+# print(sol1)
+
 with tf.Session() as sess:
     actor = createActorTfGraph('actor')
     trainingCritic = createCriticTfGraph('trainingCritic')
@@ -70,12 +73,15 @@ with tf.Session() as sess:
     trainingCritic.softCopyWeightsToOtherCritic(sess, targetCritic)
     summary_writer = tf.summary.FileWriter(os.getcwd(), graph=tf.get_default_graph())
 
-    summaries = tf.summary.merge_all()
+    trainCriticSummary = tf.summary.merge_all(scope=trainingCritic.nameScope)
+    targetCriticSummary = tf.summary.merge_all(scope=targetCritic.nameScope)
+    actorSummary = tf.summary.merge_all(scope=actor.nameScope)
+    saver = tf.train.Saver()
 
     # Training Loop
     total_numsteps = 0
     updates = 0
-    for i_episode in itertools.count(1):
+    for i_episode in range(10):
         if total_numsteps > args.num_steps:
             break
 
@@ -85,7 +91,7 @@ with tf.Session() as sess:
         state = env.reset()
 
         while not done:
-            env.render()
+            # env.render()
             if args.start_steps > total_numsteps:
                 action = env.action_space.sample()  # Sample random action
             else:
@@ -96,7 +102,8 @@ with tf.Session() as sess:
                 # Number of updates per step in environment
                 for i in range(args.updates_per_step):
                     # Update parameters of all the networks
-                    leftHemisphereLoss, rightHemisphereLoss, policy_loss = couch.update_parameters(sess,memory, args.batch_size, updates)
+                    couch.update_parameters(sess,memory, args.batch_size, updates,summary_writer ,
+                                                trainCriticSummary,targetCriticSummary ,actorSummary)
                     updates += 1
 
 
@@ -116,32 +123,8 @@ with tf.Session() as sess:
         if total_numsteps > args.num_steps:
             break
 
-        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}, leftHemiLoss: {}, rightHemiLoss: {}, policyLoss: {}".format(\
-                i_episode, total_numsteps, episode_steps, round(episode_reward, 2),leftHemisphereLoss, rightHemisphereLoss, policy_loss))
-        #
-        # if i_episode % 10 == 0 and args.eval == True:
-        #     avg_reward = 0.
-        #     episodes = 10
-        #     for _  in range(episodes):
-        #         state = env.reset()
-        #         episode_reward = 0
-        #         done = False
-        #         while not done:
-        #             action = agent.select_action(state, eval=True)
-        #
-        #             next_state, reward, done, _ = env.step(action)
-        #             episode_reward += reward
-        #
-        #
-        #             state = next_state
-        #         avg_reward += episode_reward
-        #     avg_reward /= episodes
-        #
-        #
-        #     writer.add_scalar('avg_reward/test', avg_reward, i_episode)
-        #
-        #     print("----------------------------------------")
-        #     print("Test Episodes: {}, Avg. Reward: {}".format(episodes, round(avg_reward, 2)))
-        #     print("----------------------------------------")
-
+        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(\
+                i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
+    path = saver.save(sess, os.getcwd())
+    print("model is save in: {}".format(path))
 env.close()

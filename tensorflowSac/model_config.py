@@ -22,7 +22,7 @@ memory = ReplayMemoryBuilder(1000000)
 #todo: revise 'nonLinearity' put in each layer
 
 policyArchSettings = {
-'meanNN':
+'deepMean':
     {
     'L1':
         {
@@ -73,7 +73,7 @@ policyArchSettings = {
             }
         }
     },
-'logStdNN':
+'deepStddev':
     {
     'L1':
         {
@@ -96,7 +96,7 @@ policyArchSettings = {
                 'weightMatrixShape': [50, 100],
                 'biasShape': [50],
                 'stddev': 0.1,
-                'nonLinearity': tf.nn.relu
+                'nonLinearity': tf.nn.tanh
             }
         },
     'L3':
@@ -120,7 +120,7 @@ policyArchSettings = {
                 'weightMatrixShape': [actionSpaceShape, 10],
                 'biasShape': [actionSpaceShape],
                 'stddev': 0.316,
-                'nonLinearity': None
+                'nonLinearity': tf.nn.relu
             }
         }
     }
@@ -136,7 +136,7 @@ leftHemisphereCriticArchSettings = {
             'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
             'biasShape': [100],
             'stddev': 0.03,
-            'nonLinearity': tf.nn.relu
+            'nonLinearity': tf.nn.tanh
         }
     },
     'leftHemisphere_L2':
@@ -147,7 +147,7 @@ leftHemisphereCriticArchSettings = {
             'weightMatrixShape': [50, 100],
             'biasShape': [50],
             'stddev': 0.1,
-            'nonLinearity': tf.nn.relu
+            'nonLinearity': tf.nn.tanh
         }
     },
     'leftHemisphere_L3':
@@ -158,7 +158,7 @@ leftHemisphereCriticArchSettings = {
             'weightMatrixShape': [10, 50],
             'biasShape': [10],
             'stddev': 0.14142,
-            'nonLinearity': tf.nn.relu
+            'nonLinearity': tf.nn.tanh
         }
     },
     #'head' produces logProbs of action|state
@@ -184,7 +184,7 @@ rightHemisphereCriticArchSettings = {
             'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
             'biasShape': [100],
             'stddev': 0.03,
-            'nonLinearity': tf.nn.relu
+            'nonLinearity': tf.nn.tanh
         }
     },
     'rightHemisphere_L2':
@@ -195,7 +195,7 @@ rightHemisphereCriticArchSettings = {
             'weightMatrixShape': [50, 100],
             'biasShape': [50],
             'stddev': 0.1,
-            'nonLinearity': tf.nn.relu
+            'nonLinearity': tf.nn.tanh
         }
     },
     'rightHemisphere_L3':
@@ -206,7 +206,7 @@ rightHemisphereCriticArchSettings = {
             'weightMatrixShape': [10, 50],
             'biasShape': [10],
             'stddev': 0.14142,
-            'nonLinearity': tf.nn.relu
+            'nonLinearity': tf.nn.tanh
         }
     },
     #'head' produces logProbs of action|state

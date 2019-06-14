@@ -64,6 +64,8 @@ class fullyConnectedLayerBuilder(tfNeauralStructure):
 
         head = tf.matmul(W_fc, tf.transpose(inputLayer))
         head = tf.add(tf.transpose(head), b_fc)
+        tf.summary.histogram("weightAndBiasedInput", head)
+
         if self.settings['nonLinearity'] is not None:
             head = self.settings['nonLinearity'](head)
             tf.summary.histogram("activations", head)
