@@ -38,8 +38,8 @@ def createCriticTfGraph(name):
 
 
 argSettings = {
-'start_steps': 100,
-'batch_size': 9,
+'start_steps': 1000,
+'batch_size': 256,
 'updates_per_step': 1,
     'num_steps': 1000000,
     'eval': False
