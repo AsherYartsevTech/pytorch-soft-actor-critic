@@ -20,7 +20,7 @@ class coucher:
         self.targetCritic = targetCritic
 
         self.gamma=0.99
-        self.target_update_interval = 1
+        self.target_update_interval = 10
 
     def update_parameters(self,sess, memory, batch_size, updates, summary_writer, trainCriticSummary,targetCriticSummary ,actorSummary):
 
@@ -36,7 +36,7 @@ class coucher:
         expectedValueForNextState = minLogNextStateValues - self.actor.alpha * nextStateLogProbOfAction
         expectedRewardAsGrndTruth = reward_batch + mask_batch * self.gamma * (expectedValueForNextState)
 
-
+        expectedRewardAsGrndTruth = expectedRewardAsGrndTruth.eval()
         self.trainingCritic.optimize(sess,expectedRewardAsGrndTruth,{'state': state_batch, 'action': action_batch},summary_writer, trainCriticSummary)
         # end all equation (5) from paper
 

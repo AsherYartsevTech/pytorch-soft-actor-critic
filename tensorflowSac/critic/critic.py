@@ -49,11 +49,11 @@ class critic:
                 tf.summary.scalar("rightMseLoss", self.rightMseLoss)
 
             with tf.name_scope("backprop_gradients_leftHemiGrads"):
-                optimizer = tf.train.AdamOptimizer(name="leftHemiGrads_Adam")
+                optimizer = tf.train.GradientDescentOptimizer(0.0001,name="leftHemiGrads_")
                 self.optimizeLeftHemisphere = optimizer.minimize(self.leftMseLoss, name="leftHemiGrads")
 
             with tf.name_scope("backprop_gradients_rightHemiGrads"):
-                optimizer = tf.train.AdamOptimizer(name="rightHemiGrads_Adam")
+                optimizer = tf.train.GradientDescentOptimizer(0.0001,name="rightHemiGrads_")
                 self.optimizeRightHemisphere = optimizer.minimize(self.rightMseLoss, name="rightHemiGrads")
 
     def optimize(self,sess,expectedRewardAsGrndTruth, nextActionStateFeed,summary_writer, summaries):

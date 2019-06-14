@@ -1,4 +1,4 @@
-from tensorflowSac.model_config import policyArchSettings, batchSize
+from tensorflowSac.model_config import policyArchSettings, batchSize, actionSpaceShape
 import tensorflow as tf
 from tensorflow_probability import distributions as distLib
 import numpy as np
@@ -18,7 +18,7 @@ class actor:
         self.nameScope = nameScope
         self.alpha = 0.9
     # @tfNameScoping
-    def constructPredictor(self,inputPlaceholders,trainingCriticOpinionOnPolicyChoicesPlaceHolder):
+    def constructPredictor(self,inputPlaceholders,criticValueAsGrndTruth):
         self.input = inputPlaceholders
 
         with tf.name_scope('MeansOfEachActionEntry'):
@@ -46,24 +46,34 @@ class actor:
 
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
 
-            logProbs = NormalDist.log_prob(tf.clip_by_value(actionsLogits, clip_value_min=1e-10,clip_value_max=1e+10, name="clipLogProbsOfActionLogits"),
-                                                                                    name='logProbsOfActionLogits')
+            logProbs = NormalDist.log_prob(actionsLogits,name='logProbsOfActionLogits')
 
-            self.predictor = [actions, logProbs]
             tf.summary.histogram("actorSugeestedActions", actions)
             tf.summary.histogram("actorSugeestedlogProbs", logProbs)
+
+            self.predictor = [actions, logProbs]
+
+        with tf.name_scope('alphaTuning'):
+            self.target_entropy = actionSpaceShape
+            self.log_alpha = tf.Variable(tf.constant(-0.3), name='log_alpha')
+            self.alpha= tf.exp(self.log_alpha)
+
+            self.alpha_loss = -tf.scalar_mul(self.alpha, (logProbs - self.target_entropy))
+            self.alpha_optimizer = tf.train.AdamOptimizer().minimize(self.alpha_loss, var_list=[self.log_alpha])
+            tf.summary.scalar("alpha", self.alpha)
 
         with tf.name_scope('semi_KL_loss'):
             # it's not a real KL loss since those are not realdistributions which are summed to 1
             LOGPROBS = 1
-            self.trainingCriticOpinionOnPolicyChoices = trainingCriticOpinionOnPolicyChoicesPlaceHolder
+            self.criticValueAsGrndTruth = criticValueAsGrndTruth
+
             # from original KL: p*(log(p)-log(q)) we ommit the p since its the 'p' of the ground truth part, and there for serves as constant
-            self.loss = tf.reduce_mean(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.trainingCriticOpinionOnPolicyChoices))
+            self.loss = tf.reduce_mean(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.criticValueAsGrndTruth))
             tf.summary.scalar("loss", self.loss)
 
         with tf.name_scope('backprop_gradients'):
 
-            optimizer = tf.train.AdamOptimizer()
+            optimizer = tf.train.GradientDescentOptimizer(0.0001)
             self.optimizationOp = optimizer.minimize(self.loss)
 
     def predict(self,tfSession,inputPlaceholders):
@@ -81,11 +91,14 @@ class actor:
         return actions, logProbs
 
     def optimize(self, sess, trainingCriticOpinionOnPolicyChoices ,nextState, summary_writer, summaries):
-        sess.run(self.optimizationOp, {self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
+
+        sess.run(self.optimizationOp, {self.criticValueAsGrndTruth: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
+        sess.run(self.alpha_optimizer, {self.criticValueAsGrndTruth: trainingCriticOpinionOnPolicyChoices, self.input: nextState['state']})
 
 
-        summaryOutput = sess.run(summaries, feed_dict={self.trainingCriticOpinionOnPolicyChoices: trainingCriticOpinionOnPolicyChoices,
+        summaryOutput = sess.run(summaries, feed_dict={self.criticValueAsGrndTruth: trainingCriticOpinionOnPolicyChoices,
                                        self.input: nextState['state']})
+
         summary_writer.add_summary(summaryOutput)
 
 

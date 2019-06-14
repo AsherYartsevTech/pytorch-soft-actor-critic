@@ -3,8 +3,9 @@ import sys
 import numpy as np
 import tensorflow as tf
 import gym
+import itertools
 np.set_printoptions(threshold=sys.maxsize)
-
+from datetime import datetime
 ## custom modules ##
 from tensorflowSac.actor.actor import actor
 from tensorflowSac.critic.critic import critic
@@ -17,29 +18,27 @@ action_space = actionSpaceShape
 
 
 def createActorTfGraph(name):
-
-    grndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='gtruthForActorUpdate')
+    criticValueAsGrndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='criticValueAsGrndTruth')
     statePlaceholder = tf.placeholder(tf.float32, shape=(batchSize, observation_space), name='obsInput')
 
     with tf.name_scope(name):
         actor1 = actor(name)
-        actor1.constructPredictor(statePlaceholder, grndTruthPlaceHolder)
+        actor1.constructPredictor(statePlaceholder, criticValueAsGrndTruthPlaceHolder)
     return actor1
 
 def createCriticTfGraph(name):
-
-    grndTruthPlaceHolder = tf.placeholder(tf.float32,shape=(batchSize,1), name='outputOfTargetCriticAndActorProb')
+    expectedRewardAsGrndTruth = tf.placeholder(tf.float32,shape=(batchSize,1), name='expectedRewardAsGrndTruth')
     actionPlaceholder = tf.placeholder(tf.float32, shape=(batchSize, action_space), name='actionInput')
     statePlaceholder = tf.placeholder(tf.float32, shape=(batchSize, observation_space), name='obsInput')
 
     critic1 = critic(name)
     #todo: make construct private later when debug is finished
-    critic1.construct([actionPlaceholder, statePlaceholder], grndTruthPlaceHolder)
+    critic1.construct([actionPlaceholder, statePlaceholder], expectedRewardAsGrndTruth)
     return critic1
 
 
 argSettings = {
-'start_steps': 1000,
+'start_steps': 100,
 'batch_size': 9,
 'updates_per_step': 1,
     'num_steps': 1000000,
@@ -55,15 +54,6 @@ class arguments:
 
 args = arguments(argSettings)
 
-#
-# from sympy import dsolve, Eq, symbols, Function
-# t = symbols('t')
-# x = symbols('x', cls=Function)
-# deqn1 = Eq(x(t).diff(t), 1 - x(t))
-# sol1 = dsolve(deqn1, x(t))
-#
-# print(sol1)
-
 with tf.Session() as sess:
     actor = createActorTfGraph('actor')
     trainingCritic = createCriticTfGraph('trainingCritic')
@@ -71,17 +61,22 @@ with tf.Session() as sess:
     couch = coucher(actor,trainingCritic,targetCritic)
     sess.run(tf.global_variables_initializer())
     trainingCritic.softCopyWeightsToOtherCritic(sess, targetCritic)
-    summary_writer = tf.summary.FileWriter(os.getcwd(), graph=tf.get_default_graph())
 
     trainCriticSummary = tf.summary.merge_all(scope=trainingCritic.nameScope)
     targetCriticSummary = tf.summary.merge_all(scope=targetCritic.nameScope)
+
+    day = datetime.today()
+    currDir = os.getcwd()
+    createDir = currDir+'/experiment_day-{}'.format(day)
+    os.mkdir(path=createDir)
+    summary_writer = tf.summary.FileWriter(createDir, graph=tf.get_default_graph())
     actorSummary = tf.summary.merge_all(scope=actor.nameScope)
     saver = tf.train.Saver()
 
     # Training Loop
     total_numsteps = 0
     updates = 0
-    for i_episode in range(10):
+    for i_episode in itertools.count(1):
         if total_numsteps > args.num_steps:
             break
 
@@ -91,7 +86,7 @@ with tf.Session() as sess:
         state = env.reset()
 
         while not done:
-            # env.render()
+            env.render()
             if args.start_steps > total_numsteps:
                 action = env.action_space.sample()  # Sample random action
             else:
@@ -120,11 +115,11 @@ with tf.Session() as sess:
             memory.push(state, action, reward, next_state, mask)  # Append transition to memory
             state = next_state
 
-        if total_numsteps > args.num_steps:
+        if total_numsteps > args.num_steps or episode_reward > 200:
             break
 
         print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(\
                 i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
-    path = saver.save(sess, os.getcwd())
+    path = saver.save(sess, createDir+'/modelWeights')
     print("model is save in: {}".format(path))
 env.close()

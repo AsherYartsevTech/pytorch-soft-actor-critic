@@ -56,7 +56,7 @@ class fullyConnectedLayerBuilder(tfNeauralStructure):
                                    stddev=self.settings['stddev']), name='weightMatrix')
         tf.summary.histogram("weightMatrix", W_fc)
 
-        b_fc = tf.Variable(tf.constant(0.0, shape=self.settings['biasShape']), name='bias')
+        b_fc = tf.Variable(tf.constant(0.1, shape=self.settings['biasShape']), name='bias')
         tf.summary.histogram("bias", b_fc)
 
         if W_fc.dtype != inputLayer.dtype:
