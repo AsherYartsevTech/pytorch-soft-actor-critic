@@ -38,7 +38,7 @@ def createCriticTfGraph(name):
 
 
 argSettings = {
-'start_steps': 1000,
+'start_steps': 300,
 'batch_size': 256,
 'updates_per_step': 1,
     'num_steps': 1000000,
@@ -103,6 +103,7 @@ with tf.Session() as sess:
 
 
             next_state, reward, done, _ = env.step(action)  # Step
+            reward = episode_steps
             episode_steps += 1
             total_numsteps += 1
             episode_reward += reward
@@ -115,11 +116,12 @@ with tf.Session() as sess:
             memory.push(state, action, reward, next_state, mask)  # Append transition to memory
             state = next_state
 
-        if total_numsteps > args.num_steps or episode_reward > 200:
+        if total_numsteps > args.num_steps or episode_reward > 10000:
             break
 
         print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(\
                 i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
+
     path = saver.save(sess, createDir+'/modelWeights')
     print("model is save in: {}".format(path))
 env.close()

@@ -43,7 +43,7 @@ class critic:
             with tf.name_scope("mse_losses"):
                 self.expectedRewardAsGrndTruth= expectedRewardAsGrndTruth
                 self.leftMseLoss = tf.losses.mean_squared_error(self.expectedRewardAsGrndTruth, self.leftExpectedReward, scope="leftHemiLoss")
-                self.rightMseLoss = tf.losses.mean_squared_error(self.expectedRewardAsGrndTruth, self.rightExpectedReward, scope="leftrightHemiLoss")
+                self.rightMseLoss = tf.losses.mean_squared_error(self.expectedRewardAsGrndTruth, self.rightExpectedReward, scope="rightHemiLoss")
                 # todo: find better place to put this histograms
                 tf.summary.scalar("leftMseLoss", self.leftMseLoss)
                 tf.summary.scalar("rightMseLoss", self.rightMseLoss)
@@ -55,7 +55,13 @@ class critic:
             with tf.name_scope("backprop_gradients_rightHemiGrads"):
                 optimizer = tf.train.GradientDescentOptimizer(0.0001,name="rightHemiGrads_")
                 self.optimizeRightHemisphere = optimizer.minimize(self.rightMseLoss, name="rightHemiGrads")
-
+        else:
+            self.leftMseLoss = tf.losses.mean_squared_error(expectedReward, self.leftExpectedReward,
+                                                            scope="leftHemiLoss")
+            self.rightMseLoss = tf.losses.mean_squared_error(expectedReward, self.rightExpectedReward,
+                                                             scope="rightHemiLoss")
+            tf.summary.scalar("Traget_leftMseLoss", self.leftMseLoss)
+            tf.summary.scalar("Target_rightMseLoss", self.rightMseLoss)
     def optimize(self,sess,expectedRewardAsGrndTruth, nextActionStateFeed,summary_writer, summaries):
 
 
