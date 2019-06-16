@@ -36,13 +36,13 @@ class actor:
             for key in logStdArch.keys():
                 layering = logStdArch[key]['builder'](logStdArch[key]['builder_params']).construct(layering, nameScope=key)
             log_std_vector = layering
-            std_vector = tf.exp(log_std_vector, name='logStdToStd')
+            stddev_vector = tf.exp(log_std_vector, name='logStdToStd')
 
         with tf.name_scope('finalActionAndLogProbPredictor'):
             NormalDist = distLib.Normal(loc=0., scale=1., name='NormalTensor')
-            NormalSamples = NormalDist.sample(tf.shape(std_vector))
+            NormalSamples = NormalDist.sample(tf.shape(stddev_vector))
 
-            actionsLogits = tf.math.add(mean_vector, tf.math.multiply(std_vector,NormalSamples))
+            actionsLogits = tf.math.add(mean_vector, tf.math.multiply(stddev_vector,NormalSamples))
 
             actions = tf.nn.tanh(actionsLogits, name='LateNonLinearitySolvesRandomDependency')
 

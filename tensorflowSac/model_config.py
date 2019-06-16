@@ -96,7 +96,7 @@ policyArchSettings = {
                 'weightMatrixShape': [50, 100],
                 'biasShape': [50],
                 'stddev': 0.1,
-                'nonLinearity': tf.nn.tanh
+                'nonLinearity': tf.nn.relu
             }
         },
     'L3':
@@ -120,7 +120,7 @@ policyArchSettings = {
                 'weightMatrixShape': [actionSpaceShape, 10],
                 'biasShape': [actionSpaceShape],
                 'stddev': 0.316,
-                'nonLinearity': tf.nn.relu
+                'nonLinearity': None
             }
         }
     }
