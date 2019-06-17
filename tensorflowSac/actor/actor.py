@@ -53,23 +53,26 @@ class actor:
 
             self.predictor = [actions, logProbs]
 
-        with tf.name_scope('alphaTuning'):
-            self.target_entropy = actionSpaceShape
-            self.log_alpha = tf.Variable(tf.constant(-0.3), name='log_alpha')
-            self.alpha= tf.exp(self.log_alpha)
-
-            self.alpha_loss = -tf.scalar_mul(self.alpha, (logProbs - self.target_entropy))
-            self.alpha_optimizer = tf.train.AdamOptimizer().minimize(self.alpha_loss, var_list=[self.log_alpha])
-            tf.summary.scalar("alpha", self.alpha)
 
         with tf.name_scope('semi_KL_loss'):
             # it's not a real KL loss since those are not realdistributions which are summed to 1
             LOGPROBS = 1
             self.criticValueAsGrndTruth = criticValueAsGrndTruth
+            #normalize
 
             # from original KL: p*(log(p)-log(q)) we ommit the p since its the 'p' of the ground truth part, and there for serves as constant
-            self.loss = tf.reduce_mean(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - self.criticValueAsGrndTruth))
+            self.loss = tf.reduce_mean(tf.abs(tf.scalar_mul(self.alpha, self.predictor[LOGPROBS]) - tf.stop_gradient(self.criticValueAsGrndTruth)))
             tf.summary.scalar("loss", self.loss)
+
+        with tf.name_scope('alphaTuning'):
+            #todo: extern
+            self.target_entropy = -0.5
+            self.log_alpha = tf.Variable(tf.constant(-0.3), name='log_alpha')
+            self.alpha= tf.exp(self.log_alpha)
+
+            self.alpha_loss = -tf.scalar_mul(self.alpha, (tf.stop_gradient(logProbs) - self.target_entropy))
+            self.alpha_optimizer = tf.train.AdamOptimizer().minimize(self.alpha_loss, var_list=[self.log_alpha])
+            tf.summary.scalar("alpha", self.alpha)
 
         with tf.name_scope('backprop_gradients'):
 

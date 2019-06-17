@@ -56,9 +56,9 @@ class critic:
                 optimizer = tf.train.GradientDescentOptimizer(0.0001,name="rightHemiGrads_")
                 self.optimizeRightHemisphere = optimizer.minimize(self.rightMseLoss, name="rightHemiGrads")
         else:
-            self.leftMseLoss = tf.losses.mean_squared_error(expectedReward, self.leftExpectedReward,
+            self.leftMseLoss = tf.losses.mean_squared_error(expectedReward,tf.stop_gradient(self.leftExpectedReward),
                                                             scope="leftHemiLoss")
-            self.rightMseLoss = tf.losses.mean_squared_error(expectedReward, self.rightExpectedReward,
+            self.rightMseLoss = tf.losses.mean_squared_error(expectedReward,tf.stop_gradient(self.rightExpectedReward),
                                                              scope="rightHemiLoss")
             tf.summary.scalar("Traget_leftMseLoss", self.leftMseLoss)
             tf.summary.scalar("Target_rightMseLoss", self.rightMseLoss)

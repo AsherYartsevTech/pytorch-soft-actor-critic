@@ -104,7 +104,7 @@ with tf.Session() as sess:
                 state = np.reshape(state, newshape=(1, observationSpaceShape))
                 action, _ = actor.predict(sess, {'state': state})# Sample action from policy
                 action = np.int(action)
-            if len(memory) > args.batch_size:
+            if len(memory) > (args.batch_size*100):
                 # Number of updates per step in environment
                 for i in range(args.updates_per_step):
                     # Update parameters of all the networks
@@ -114,11 +114,12 @@ with tf.Session() as sess:
 
 
             next_state, reward, done, _ = env.step(action)  # Step
-            # reward = episode_steps
+            reward =  np.log(episode_steps+1)
+            if done:
+                reward = - episode_steps
             episode_steps += 1
             total_numsteps += 1
             episode_reward += reward
-
 
             # Ignore the "done" signal if it comes from hitting the time horizon.
             # (https://github.com/openai/spinningup/blob/master/spinup/algos/sac/sac.py)
@@ -127,7 +128,7 @@ with tf.Session() as sess:
             memory.push(state, action, reward, next_state, mask)  # Append transition to memory
             state = next_state
 
-        if total_numsteps > args.num_steps or episode_reward > 10000:
+        if total_numsteps > args.num_steps:
             break
 
         total_reward += episode_reward

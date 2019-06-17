@@ -88,10 +88,10 @@ class ReplayMemoryBuilder:
         self.position = (self.position + 1) % self.capacity
 
     def sample(self, batch_size):
-        startIndex = random.randint(0, len(self.buffer)-batch_size)
+        # startIndex = random.randint(0, len(self.buffer)-batch_size)
 
-        # batch = random.sample(self.buffer, batch_size)
-        batch = self.buffer[startIndex: startIndex+batch_size]
+        batch = random.sample(self.buffer, batch_size)
+        # batch = self.buffer[startIndex: startIndex+batch_size]
         state, action, reward, next_state, done = map(np.ma.row_stack, zip(*batch))
         return state, action, reward, next_state, done
 

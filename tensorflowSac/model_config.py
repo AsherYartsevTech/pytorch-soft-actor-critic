@@ -133,8 +133,8 @@ leftHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
-            'biasShape': [100],
+            'weightMatrixShape': [20, actionSpaceShape + observationSpaceShape],
+            'biasShape': [20],
             'stddev': 0.03,
             'nonLinearity': tf.nn.tanh
         }
@@ -144,8 +144,8 @@ leftHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [50, 100],
-            'biasShape': [50],
+            'weightMatrixShape': [10, 20],
+            'biasShape': [10],
             'stddev': 0.1,
             'nonLinearity': tf.nn.tanh
         }
@@ -155,8 +155,8 @@ leftHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [10, 50],
-            'biasShape': [10],
+            'weightMatrixShape': [5, 10],
+            'biasShape': [5],
             'stddev': 0.14142,
             'nonLinearity': tf.nn.tanh
         }
@@ -167,7 +167,7 @@ leftHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [1, 10],
+            'weightMatrixShape': [1, 5],
             'biasShape': [1],
             'stddev': 0.316,
             'nonLinearity': None
@@ -181,8 +181,8 @@ rightHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [100, actionSpaceShape + observationSpaceShape],
-            'biasShape': [100],
+            'weightMatrixShape': [20, actionSpaceShape + observationSpaceShape],
+            'biasShape': [20],
             'stddev': 0.03,
             'nonLinearity': tf.nn.tanh
         }
@@ -192,8 +192,8 @@ rightHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [50, 100],
-            'biasShape': [50],
+            'weightMatrixShape': [10, 20],
+            'biasShape': [10],
             'stddev': 0.1,
             'nonLinearity': tf.nn.tanh
         }
@@ -203,8 +203,8 @@ rightHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [10, 50],
-            'biasShape': [10],
+            'weightMatrixShape': [5, 10],
+            'biasShape': [5],
             'stddev': 0.14142,
             'nonLinearity': tf.nn.tanh
         }
@@ -215,7 +215,7 @@ rightHemisphereCriticArchSettings = {
         'builder': fullyConnectedLayerBuilder,
         'builder_params':
         {
-            'weightMatrixShape': [1, 10],
+            'weightMatrixShape': [1, 5],
             'biasShape': [1],
             'stddev': 0.316,
             'nonLinearity': None

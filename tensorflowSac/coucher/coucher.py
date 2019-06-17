@@ -20,7 +20,7 @@ class coucher:
         self.targetCritic = targetCritic
 
         self.gamma=0.99
-        self.target_update_interval = 100
+        self.target_update_interval = 1
 
     def update_parameters(self,sess, memory, batch_size, updates, summary_writer, trainCriticSummary,targetCriticSummary ,actorSummary):
 
