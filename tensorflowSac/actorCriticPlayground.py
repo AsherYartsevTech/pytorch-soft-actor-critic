@@ -58,12 +58,21 @@ with tf.Session() as sess:
     actor = createActorTfGraph('actor')
     trainingCritic = createCriticTfGraph('trainingCritic')
     targetCritic = createCriticTfGraph('targetCritic')
-    couch = coucher(actor,trainingCritic,targetCritic)
+    couch = coucher(actor, trainingCritic, targetCritic)
+
+    with tf.name_scope("running_params"):
+        averageRewardCalc = tf.placeholder(dtype=tf.float64, shape=(),name="average_reward_placeholder")
+        # average_reward = tf.Variable(tf.constant(0.0,shape=(), dtype=tf.float64, name="constInitializer"), name="average_reward")
+        # tf.assign(averageRewardCalc, value=averageRewardCalc, name="assignToAverage")
+
+        tf.summary.scalar("average_reward", averageRewardCalc)
     sess.run(tf.global_variables_initializer())
+
     trainingCritic.softCopyWeightsToOtherCritic(sess, targetCritic)
 
     trainCriticSummary = tf.summary.merge_all(scope=trainingCritic.nameScope)
     targetCriticSummary = tf.summary.merge_all(scope=targetCritic.nameScope)
+    runningParametersSummaray = tf.summary.merge_all(scope="running_params")
 
     day = datetime.today()
     currDir = os.getcwd()
@@ -77,7 +86,7 @@ with tf.Session() as sess:
     total_numsteps = 0
     updates = 0
     total_reward = 0
-    average_reward = 0
+    average_reward_scalar = 0
     for i_episode in itertools.count(1):
         if total_numsteps > args.num_steps:
             break
@@ -122,6 +131,8 @@ with tf.Session() as sess:
             break
 
         total_reward += episode_reward
+        summaryOutput = sess.run(runningParametersSummaray, feed_dict={averageRewardCalc: (total_reward/(i_episode+1))})
+        summary_writer.add_summary(summaryOutput)
 
         print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}, average_reward: {}".format(\
                 i_episode, total_numsteps, episode_steps, round(episode_reward, 2), (total_reward/(i_episode+1))))
