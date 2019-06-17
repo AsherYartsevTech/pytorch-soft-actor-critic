@@ -30,8 +30,8 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [100, observationSpaceShape],
-                'biasShape': [100],
+                'weightMatrixShape': [20, observationSpaceShape],
+                'biasShape': [20],
                 'stddev': 0.03,
                 'nonLinearity': tf.nn.tanh
             }
@@ -42,8 +42,8 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [50, 100],
-                'biasShape': [50],
+                'weightMatrixShape': [10, 20],
+                'biasShape': [10],
                 'stddev': 0.1,
                 'nonLinearity': tf.nn.tanh
             }
@@ -54,8 +54,8 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [10, 50],
-                'biasShape': [10],
+                'weightMatrixShape': [5, 10],
+                'biasShape': [5],
                 'stddev': 0.14142,
                 'nonLinearity': tf.nn.tanh
             }
@@ -66,7 +66,7 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [actionSpaceShape, 10],
+                'weightMatrixShape': [actionSpaceShape, 5],
                 'biasShape': [actionSpaceShape],
                 'stddev': 0.316,
                 'nonLinearity': None
@@ -81,8 +81,8 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [100, observationSpaceShape],
-                'biasShape': [100],
+                'weightMatrixShape': [20, observationSpaceShape],
+                'biasShape': [20],
                 'stddev': 0.03,
                 'nonLinearity': tf.nn.relu
             }
@@ -93,8 +93,8 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [50, 100],
-                'biasShape': [50],
+                'weightMatrixShape': [10, 20],
+                'biasShape': [10],
                 'stddev': 0.1,
                 'nonLinearity': tf.nn.relu
             }
@@ -105,8 +105,8 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [10, 50],
-                'biasShape': [10],
+                'weightMatrixShape': [5, 10],
+                'biasShape': [5],
                 'stddev': 0.14142,
                 'nonLinearity': tf.nn.relu
             }
@@ -117,7 +117,7 @@ policyArchSettings = {
             'builder': fullyConnectedLayerBuilder,
             'builder_params':
             {
-                'weightMatrixShape': [actionSpaceShape, 10],
+                'weightMatrixShape': [actionSpaceShape, 5],
                 'biasShape': [actionSpaceShape],
                 'stddev': 0.316,
                 'nonLinearity': None

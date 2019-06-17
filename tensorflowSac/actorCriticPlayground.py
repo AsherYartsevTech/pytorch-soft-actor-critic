@@ -76,6 +76,8 @@ with tf.Session() as sess:
     # Training Loop
     total_numsteps = 0
     updates = 0
+    total_reward = 0
+    average_reward = 0
     for i_episode in itertools.count(1):
         if total_numsteps > args.num_steps:
             break
@@ -103,7 +105,7 @@ with tf.Session() as sess:
 
 
             next_state, reward, done, _ = env.step(action)  # Step
-            reward = episode_steps
+            # reward = episode_steps
             episode_steps += 1
             total_numsteps += 1
             episode_reward += reward
@@ -119,8 +121,10 @@ with tf.Session() as sess:
         if total_numsteps > args.num_steps or episode_reward > 10000:
             break
 
-        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}".format(\
-                i_episode, total_numsteps, episode_steps, round(episode_reward, 2)))
+        total_reward += episode_reward
+
+        print("Episode: {}, total numsteps: {}, episode steps: {}, reward: {}, average_reward: {}".format(\
+                i_episode, total_numsteps, episode_steps, round(episode_reward, 2), (total_reward/(i_episode+1))))
 
     path = saver.save(sess, createDir+'/modelWeights')
     print("model is save in: {}".format(path))
