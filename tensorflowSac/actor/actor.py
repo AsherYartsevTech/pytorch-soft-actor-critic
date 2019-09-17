@@ -65,6 +65,7 @@ class actor:
             tf.summary.scalar("loss", self.loss)
 
         with tf.name_scope('alphaTuning'):
+            # todo: when testing- drop the exploring
             #todo: extern
             self.target_entropy = -0.5
             self.log_alpha = tf.Variable(tf.constant(-0.3), name='log_alpha')
