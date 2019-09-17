@@ -114,4 +114,4 @@ class critic:
                               for (dstCriticVar, srcCriticVar) in
                               zip(tf.trainable_variables(otherCritic.nameScope), tf.trainable_variables(self.nameScope))]
             return sess.run(self.update_weights)
-
+#test comment
