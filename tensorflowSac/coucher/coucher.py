@@ -1,5 +1,4 @@
 
-import os
 import numpy as np
 import tensorflow as tf
 
@@ -7,7 +6,7 @@ import sys
 np.set_printoptions(threshold=sys.maxsize)
 
 ## custom modules ##
-from tensorflowSac.model_config import observationSpaceShape, actionSpaceShape, batchSize, memory
+from tensorflowSac.model_config import observationSpaceShape
 
 
 
