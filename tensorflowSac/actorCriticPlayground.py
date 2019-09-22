@@ -1,4 +1,7 @@
 import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ['LANG']='en_US'
+
 import sys
 import numpy as np
 import tensorflow as tf
@@ -41,7 +44,7 @@ argSettings = {
 'start_steps': 300,
 'batch_size': 256,
 'updates_per_step': 1,
-    'num_steps': 1000000,
+    'num_steps': 1000000000,
     'eval': False
 }
 class arguments:
